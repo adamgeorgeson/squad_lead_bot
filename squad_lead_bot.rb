@@ -77,7 +77,7 @@ module SlackNotifier
         author_link: "#{issue.user.html_url}",
         author_icon: "#{issue.user.avatar_url}",
         title: "#{issue.title}",
-        title_link: "#{issue.pull_request.html_url}",
+        title_link: "#{issue.pull_request&.html_url || issue.html_url}",
         fields: [
           {
             title: 'Status',
@@ -145,8 +145,6 @@ module Tasks
         end
       end
     end
-  rescue => e
-    raise "ERROR: #{e.message}"
   end
 end
 
