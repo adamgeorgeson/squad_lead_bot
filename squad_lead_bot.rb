@@ -1,3 +1,4 @@
+require 'sinatra'
 require 'rufus-scheduler'
 require 'octokit'
 require 'slack-notifier'
@@ -10,6 +11,10 @@ UNLABELLED_REPOS = ENV['SQUAD_NOTIFIER_UNLABELLED_REPOS'].split(',') || []
 TARGET_LABELS = ENV['SQUAD_NOTIFIER_TARGET_LABELS'].split(',') || []
 TARGET_CHANNEL = ENV['SQUAD_NOTIFIER_TARGET_CHANNEL']
 SLACK_USERNAME = ENV['SQUAD_NOTIFIER_SLACK_USERNAME'] || 'Squad Bot'
+
+configure do
+  set :scheduler, Rufus::Scheduler.new
+end
 
 # Responsible for querying GitHub's API for issues we want to notify a Slack channel of
 module IssueIdentifier
@@ -145,10 +150,16 @@ module Tasks
   end
 end
 
-scheduler = Rufus::Scheduler.new
+get '/refresh' do
+  puts "#{[Time.now]} EXECUTING: Manual Refresh - Notify Slack of open Pull Requests"
+
+  Tasks.notify_slack_of_open_issues
+
+  puts "#{[Time.now]} COMPLETE: Manual Refresh - Notify Slack of open Pull Requests"
+end
 
 # Scheduled task for 08:00 Mon-Fri
-scheduler.cron '0 8 * * 1-5' do
+settings.scheduler.cron '0 8 * * 1-5' do
   puts "#{[Time.now]} EXECUTING: Notify Slack of open Pull Requests each weekday morning"
 
   Tasks.notify_slack_of_open_issues
@@ -157,13 +168,10 @@ scheduler.cron '0 8 * * 1-5' do
 end
 
 # Scheduled task for 12:30 Mon-Fri
-scheduler.cron '30 12 * * 1-5' do
+settings.scheduler.cron '30 12 * * 1-5' do
   puts "#{[Time.now]} EXECUTING: Notify Slack of open Pull Requests each weekday afternoon"
 
   Tasks.notify_slack_of_open_issues
 
   puts "#{[Time.now]} COMPLETE: Notify Slack of open Pull Requests each weekday at afternoon"
 end
-
-scheduler.join
-

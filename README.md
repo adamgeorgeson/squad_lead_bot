@@ -6,13 +6,14 @@ Slack bot which schedules daily tasks to support development squads/teams.
  - At 08:00 and 12:30, pull down open pull-requests/issues from GitHub's API and post to Slack.
  - Uses environment variables to specify target repos, and target labels if your teams use labels in PR's to seperate out teams.
  - Best guess based on labels to determine what the current status of the PR is.
+ - Manual triggering using the `/refresh` endpoint.
  - It says either 'Morning' or 'Afternoon' depending on the time of day. Groundbreaking!
 
 ### Todo
  - Handle configuration of PRs which are to post in different Slack channels.
  - Handle labels better when determining status, or just output the labels. Currently opinionated based on main project this is aimed at.
  - Additional tasks to support development teams in a similar fashion. JIRA maybe?
- - Add a route to manually kick off tasks.
+ - Allow the `/refresh` route to take params.
 
 ### Usage
 
@@ -47,4 +48,5 @@ $ bundle install
 ```
 
  - Run the application with `ruby squad_lead_bot.sh`.
+ - Manually trigger by using `curl http://localhost:4567/refresh`
  - Do other stuff.
