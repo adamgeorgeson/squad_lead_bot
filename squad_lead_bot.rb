@@ -8,9 +8,13 @@ GITHUB_TOKEN = ENV['SQUAD_NOTIFIER_GITHUB_TOKEN']
 SLACK_WEBHOOK = ENV['SQUAD_NOTIFIER_SLACK_WEBHOOK']
 TARGET_REPOS = ENV['SQUAD_NOTIFIER_TARGET_REPOS'].split(',') || []
 UNLABELLED_REPOS = ENV['SQUAD_NOTIFIER_UNLABELLED_REPOS'].split(',') || []
-TARGET_LABELS = ENV['SQUAD_NOTIFIER_TARGET_LABELS'].split(',') || []
+TEAM_LABELS = ENV['SQUAD_NOTIFIER_TEAM_LABELS'].split(',') || []
 TARGET_CHANNEL = ENV['SQUAD_NOTIFIER_TARGET_CHANNEL']
 SLACK_USERNAME = ENV['SQUAD_NOTIFIER_SLACK_USERNAME'] || 'Squad Bot'
+QA_LABELS = ENV['SQUAD_NOTIFIER_QA_LABELS'].split(',').to_set || [].to_set
+REVIEW_LABELS = ENV['SQUAD_NOTIFIER_REVIEW_LABELS'].split(',').to_set || [].to_set
+MERGE_LABELS = ENV['SQUAD_NOTIFIER_MERGE_LABELS'].split(',').to_set || [].to_set
+INCLUSIVE_LABELS = REVIEW_LABELS + QA_LABELS + MERGE_LABELS
 
 configure do
   set :scheduler, Rufus::Scheduler.new
@@ -29,23 +33,31 @@ module IssueIdentifier
   def open_issues_for(repo:, label: nil)
     options = label ? {labels: label} : {}
 
-    git_client.issues(repo, options)
+    issues = git_client.issues(repo, options)
+
+    filter(issues)
+  end
+
+  # Filters issues to remove issues with specific labels
+  def filter(issues)
+    issues.select do |issue|
+      issue_labels = issue.labels.map(&:name).to_set
+      issue.pull_request? && (issue_labels.empty? || issue_labels.intersect?(INCLUSIVE_LABELS))
+    end
   end
 
   # Returns a string identifying the status of a Pull Request
-  # TODO this is quite project specific and dependant on the labels which currently exist on that project.
-  # TODO come up with a better way. Resorts to 'Open' if suitable label not found.
   def status(labels)
     labels = labels.to_set
 
-    if labels.include? 'Pending Review'
+    return 'No labels!' if labels.empty?
+
+    if labels.intersect? REVIEW_LABELS
       'Pending review'
-    elsif labels.intersect?(['Ready for QA', 'Passed Review'].to_set) && !labels.include?('No QA Required')
-      'Ready for QA'
-    elsif labels.intersect?(['Requires Further Action', 'Resolve Merge Conflicts', 'Needs Gemfile update', 'DO NOT MERGE', 'Review Only'].to_set)
-      'Requires further action'
-    elsif labels.intersect? ['Passed QA', 'No QA Required'].to_set
+    elsif labels.intersect? MERGE_LABELS
       'Ready for merge'
+    elsif labels.intersect? QA_LABELS
+      'Ready for QA'
     else
       'Open'
     end
@@ -117,7 +129,8 @@ module SlackNotifier
       'Pending review' => '#fef2c0',
       'Ready for merge' => '#bfe5bf',
       'Requires further action' => '#eb6420',
-      'Open' => '#eb6420'
+      'Open' => '#eb6420',
+      'No labels!' => '#eb6420'
     }
   end
 
@@ -135,11 +148,11 @@ module Tasks
     raise 'No target repos configured' if TARGET_REPOS.count.zero?
 
     TARGET_REPOS.each do |repo|
-      if TARGET_LABELS.empty? || UNLABELLED_REPOS.include?(repo)
+      if TEAM_LABELS.empty? || UNLABELLED_REPOS.include?(repo)
         issues = IssueIdentifier.open_issues_for(repo: repo)
         SlackNotifier.post_issues_to_slack(repo, issues)
       else
-        TARGET_LABELS.each do |label|
+        TEAM_LABELS.each do |label|
           issues = IssueIdentifier.open_issues_for(repo: repo, label: label)
           SlackNotifier.post_issues_to_slack(repo, issues, label)
         end
