@@ -3,7 +3,7 @@
 Slack bot which schedules daily tasks to support development squads/teams.
 
 ### Features:
- - At 08:00 and 12:30, pull down open pull-requests/issues from GitHub's API and post to Slack.
+ - At defined schedules pull down open pull-requests/issues from GitHub's API and post to Slack.
  - Uses environment variables to specify target repos, and target labels if your teams use labels in PR's to seperate out teams.
  - Best guess based on labels to determine what the current status of the PR is.
  - Manual triggering using the `/refresh` endpoint.
@@ -25,6 +25,9 @@ $ export SQUAD_NOTIFIER_GITHUB_TOKEN='PersonalAccessToken'
 
 # The Slack webhook URL. See https://api.slack.com/incoming-webhooks
 $ export SQUAD_NOTIFIER_SLACK_WEBHOOK='https://hooks.slack.com/services/IM/NOT/REAL'
+
+# Comma seperated list of CRON job schedules
+$ export SQUAD_NOTIFIER_SCHEDULES='0 8 * * 1-5,0 12 * * 1-5'
 
 # Comma seperated list of repos we want to check for open PR's
 $ export SQUAD_NOTIFIER_TARGET_REPOS="org/repo1,org/repo2,org/repo3,org/repo4"
@@ -49,4 +52,5 @@ $ bundle install
 
  - Run the application with `ruby squad_lead_bot.sh`.
  - Manually trigger by using `curl http://localhost:4567/refresh`
- - Do other stuff.
+
+<div style="text-align:center">![be excellent to eachother](https://i.imgflip.com/1dll28.jpg)</div>

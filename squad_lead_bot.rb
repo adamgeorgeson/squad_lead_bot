@@ -20,6 +20,12 @@ configure do
   set :scheduler, Rufus::Scheduler.new
 end
 
+def schedules
+  ENV['SQUAD_NOTIFIER_SCHEDULES'].split(',')
+rescue
+  raise('No schedules set')
+end
+
 # Responsible for querying GitHub's API for issues we want to notify a Slack channel of
 module IssueIdentifier
   extend self
@@ -169,20 +175,13 @@ get '/refresh' do
   puts "#{[Time.now]} COMPLETE: Manual Refresh - Notify Slack of open Pull Requests"
 end
 
-# Scheduled task for 08:00 Mon-Fri
-settings.scheduler.cron '0 8 * * 1-5' do
-  puts "#{[Time.now]} EXECUTING: Notify Slack of open Pull Requests each weekday morning"
+schedules.each do |schedule|
+  settings.scheduler.cron schedule do
+    puts "#{[Time.now]} EXECUTING: Notify Slack of open Pull Requests"
 
-  Tasks.notify_slack_of_open_issues
+    Tasks.notify_slack_of_open_issues
 
-  puts "#{[Time.now]} COMPLETE: Notify Slack of open Pull Requests each weekday morning"
+    puts "#{[Time.now]} COMPLETE: Notify Slack of open Pull Requests"
+  end
 end
 
-# Scheduled task for 12:30 Mon-Fri
-settings.scheduler.cron '30 12 * * 1-5' do
-  puts "#{[Time.now]} EXECUTING: Notify Slack of open Pull Requests each weekday afternoon"
-
-  Tasks.notify_slack_of_open_issues
-
-  puts "#{[Time.now]} COMPLETE: Notify Slack of open Pull Requests each weekday at afternoon"
-end
