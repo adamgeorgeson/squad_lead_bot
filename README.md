@@ -50,7 +50,8 @@ $ export SQUAD_NOTIFIER_SLACK_USERNAME='Super Dooper Sqaud Bot'
 $ bundle install
 ```
 
- - Run the application with `ruby squad_lead_bot.sh`.
+ - Run the application with `bundle exec rackup config.ru -p 4567`.
  - Manually trigger by using `curl http://localhost:4567/refresh`
 
 <div style="text-align:center">![be excellent to eachother](https://i.imgflip.com/1dll28.jpg)</div>
+

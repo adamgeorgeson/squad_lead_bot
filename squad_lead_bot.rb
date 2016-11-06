@@ -167,6 +167,11 @@ module Tasks
   end
 end
 
+get '/' do
+  "<h1>You've found me!</h1>
+  <p>Want me to pester your team for pull request reviews at scheduled intervals? Read more at <a href='https://github.com/adamgeorgeson/squad_lead_bot'>github.com/adamgeorgeson/squad_lead_bot</a></p>"
+end
+
 get '/refresh' do
   puts "#{[Time.now]} EXECUTING: Manual Refresh - Notify Slack of open Pull Requests"
 
