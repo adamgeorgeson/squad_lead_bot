@@ -4,16 +4,23 @@ require 'octokit'
 require 'slack-notifier'
 require 'set'
 
+REQUIRED_ENV_VARS = %W(SQUAD_NOTIFIER_GITHUB_TOKEN SQUAD_NOTIFIER_SLACK_WEBHOOK SQUAD_NOTIFIER_TARGET_CHANNEL).freeze
+REQUIRED_ENV_VARS.each do |var|
+  raise "expected an ENV var called #{var}" if ENV[var].nil?
+end
+
 GITHUB_TOKEN = ENV['SQUAD_NOTIFIER_GITHUB_TOKEN']
 SLACK_WEBHOOK = ENV['SQUAD_NOTIFIER_SLACK_WEBHOOK']
-TARGET_REPOS = ENV['SQUAD_NOTIFIER_TARGET_REPOS'].split(',') || []
-UNLABELLED_REPOS = ENV['SQUAD_NOTIFIER_UNLABELLED_REPOS'].split(',') || []
-TEAM_LABELS = ENV['SQUAD_NOTIFIER_TEAM_LABELS'].split(',') || []
 TARGET_CHANNEL = ENV['SQUAD_NOTIFIER_TARGET_CHANNEL']
-SLACK_USERNAME = ENV['SQUAD_NOTIFIER_SLACK_USERNAME'] || 'Squad Bot'
-QA_LABELS = ENV['SQUAD_NOTIFIER_QA_LABELS'].split(',').to_set || [].to_set
-REVIEW_LABELS = ENV['SQUAD_NOTIFIER_REVIEW_LABELS'].split(',').to_set || [].to_set
-MERGE_LABELS = ENV['SQUAD_NOTIFIER_MERGE_LABELS'].split(',').to_set || [].to_set
+SLACK_USERNAME = ENV.fetch('SQUAD_NOTIFIER_SLACK_USERNAME', 'Squad Bot')
+
+UNLABELLED_REPOS = ENV.fetch('SQUAD_NOTIFIER_UNLABELLED_REPOS', '').split(',')
+TARGET_REPOS = ENV.fetch('SQUAD_NOTIFIER_TARGET_REPOS', '').split(',') | UNLABELLED_REPOS
+
+TEAM_LABELS = ENV.fetch('SQUAD_NOTIFIER_TEAM_LABELS', '').split(',').to_set
+QA_LABELS = ENV.fetch('SQUAD_NOTIFIER_QA_LABELS', '').split(',').to_set
+REVIEW_LABELS = ENV.fetch('SQUAD_NOTIFIER_REVIEW_LABELS', '').split(',').to_set
+MERGE_LABELS = ENV.fetch('SQUAD_NOTIFIER_MERGE_LABELS', '').split(',').to_set
 INCLUSIVE_LABELS = REVIEW_LABELS + QA_LABELS + MERGE_LABELS
 
 configure do
@@ -118,15 +125,14 @@ module SlackNotifier
 
   # Post message for issues/pull requests to Slack
   def post_issues_to_slack(repo, issues, label = nil)
-    if issues.count > 0
-      time_of_day = (0..11).include?(Time.now.hour) ? 'Morning' : 'Afternoon'
-      message = "#{time_of_day} team, here is a summary of #{issues.count} open pull requests for `#{repo}`"
-      message += " and label `#{label}`" if label
+    return unless issues.count > 0
+    time_of_day = (0..11).include?(Time.now.hour) ? 'Morning' : 'Afternoon'
+    message = "#{time_of_day} team, here is a summary of #{issues.count} open pull requests for `#{repo}`"
+    message += " and label `#{label}`" if label
 
-      attachments = build_issue_slack_attachments(issues)
+    attachments = build_issue_slack_attachments(issues)
 
-      post_to_slack(message: message, attachments: attachments)
-    end
+    post_to_slack(message: message, attachments: attachments)
   end
 
   # Map the determined status to colours to display against the post in Slack
@@ -189,4 +195,3 @@ schedules.each do |schedule|
     puts "#{[Time.now]} COMPLETE: Notify Slack of open Pull Requests"
   end
 end
-
