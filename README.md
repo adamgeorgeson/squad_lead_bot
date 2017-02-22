@@ -53,5 +53,4 @@ $ bundle install
  - Run the application with `bundle exec rackup config.ru -p 4567`.
  - Manually trigger by using `curl http://localhost:4567/refresh`
 
-<div style="text-align:center">![be excellent to eachother](https://i.imgflip.com/1dll28.jpg)</div>
-
+<p align="center"><img src="https://i.imgflip.com/1dll28.jpg" alt="be excellent to eachother"></p>
